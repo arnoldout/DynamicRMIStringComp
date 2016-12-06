@@ -1,11 +1,11 @@
 package ie.gmit.sw;
 
-public class MessageRequest {
+public class THE_JOB_CONTAINER {
 	private Long jobId;
 	private String strA;
 	private String strB;
 
-	public MessageRequest(Long jobId, String str1, String str2) {
+	public THE_JOB_CONTAINER(Long jobId, String str1, String str2) {
 		super();
 		this.jobId = jobId;
 		this.strA = str1;

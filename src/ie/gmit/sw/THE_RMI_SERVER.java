@@ -3,14 +3,14 @@ package ie.gmit.sw;
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 
-public class MessageServer {
+public class THE_RMI_SERVER {
 	public static void main(String[] args) throws Exception{
-		//MessageService ss = new MessageServiceImpl();
+		THE_FACADE ss = new THE_FACADE();
 		LocateRegistry.createRegistry(1099);
 		
 		//facade
 		//StringCompareMaker scm = new StringCompareMaker();
-		//Naming.rebind("StringService", ss);
+		Naming.rebind("StringService", ss);
 		System.out.println("Server ready.");
 	}
 }

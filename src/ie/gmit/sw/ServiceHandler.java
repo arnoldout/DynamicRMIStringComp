@@ -14,8 +14,8 @@ public class ServiceHandler extends HttpServlet {
 	private String remoteHost = null;
 	private static AtomicLong jobNumber;
 
-	private BlockingQueue<Long> inQueue = new ArrayBlockingQueue<Long>(100);
-	private Map <AtomicLong, AtomicLong> outQueue = new HashMap<AtomicLong, AtomicLong> ();
+	private BlockingQueue<THE_JOB_CONTAINER> inQueue = new ArrayBlockingQueue<THE_JOB_CONTAINER>(100);
+	private Map <Long, Long> outQueue = new HashMap<Long, Long> ();
 	public void init() throws ServletException {
 		ServletContext ctx = getServletContext();
 		jobNumber = new AtomicLong(0);
@@ -38,9 +38,9 @@ public class ServiceHandler extends HttpServlet {
 		
 		if (taskNumber == null){
 			taskNumber = new String("T" + jobNumber.get());
-			inQueue.add(jobNumber.get());
-			outQueue.put(jobNumber, jobNumber);
-			MessageRequest r = new MessageRequest(jobNumber.get(), strA, strB);
+			inQueue.add(new THE_JOB_CONTAINER(jobNumber.get(), strA, strB));
+			outQueue.put(jobNumber.get(), jobNumber.get());
+			AlgoService.getComparer(algorithm);
 			jobNumber.incrementAndGet();
 			//Add job to in-queue
 		}else{
@@ -91,7 +91,7 @@ public class ServiceHandler extends HttpServlet {
 		
 		//
 	}
-
+	
 	public void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		doGet(req, resp);
  	}

@@ -1,13 +1,15 @@
 package ie.gmit.sw;
 
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-public class StringCompareMaker {
+public class THE_FACADE implements Remote{
 	private StringComparable sc;
-
-	public StringCompareMaker(StringComparer eComparer) throws RemoteException {
+	
+	public THE_FACADE() throws RemoteException {
 		super();
-		
+	}
+	public void setAlgo(StringComparer eComparer) {
 		switch (eComparer) {
 		case DamerauLevenshtein:
 			sc = new DamerauLevenshtein();
@@ -20,7 +22,7 @@ public class StringCompareMaker {
 			break;
 		}
 	}
-	public int distance(String s, String t)
+	public int compare(String s, String t) throws RemoteException
 	{
 		return sc.distance(s, t);
 	}
