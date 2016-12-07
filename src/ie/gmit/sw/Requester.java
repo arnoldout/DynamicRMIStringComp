@@ -1,15 +1,27 @@
 package ie.gmit.sw;
 
-public class THE_JOB_CONTAINER {
+public class Requester {
 	private Long jobId;
 	private String strA;
 	private String strB;
-
-	public THE_JOB_CONTAINER(Long jobId, String str1, String str2) {
+	private StringComparer sc;
+	
+	public Requester(Long jobId, String str1, String str2, StringComparer sc) {
 		super();
 		this.jobId = jobId;
 		this.strA = str1;
 		this.strB = str2;
+		this.sc = sc;
+	}
+	public StringComparer getSc() {
+		return sc;
+	}
+	public void setSc(StringComparer sc) {
+		this.sc = sc;
+	}
+	public Resultator makeRequest()
+	{
+		return new ResultatorImpl();
 	}
 	
 	public String getStr1() {
