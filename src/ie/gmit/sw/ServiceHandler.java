@@ -19,24 +19,25 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 public class ServiceHandler extends HttpServlet {
+	private static final long serialVersionUID = 229626802L;
 	private String remoteHost = null;
 	private static AtomicLong jobNumber;
 
 	private BlockingQueue<Requester> inQueue = new ArrayBlockingQueue<Requester>(100);
-	private Map<Long, Resultator> outQueue = new HashMap<Long, Resultator>();
+	private Map<String, Resultator> outQueue = new HashMap<String, Resultator>();
 
 	public void init() throws ServletException {
 		ServletContext ctx = getServletContext();
 		remoteHost = ctx.getInitParameter("RMI_SERVER"); // Reads the value from
-		jobNumber = new AtomicLong(0);						// the
-															// <context-param>
-															// in web.xml
+		jobNumber = new AtomicLong(0); // the
+										// <context-param>
+										// in web.xml
 	}
 
 	public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		resp.setContentType("text/html");
 		PrintWriter out = resp.getWriter();
-		
+
 		// Initialise some request varuables with the submitted form info. These
 		// are local to this method and thread safe...
 		String algorithm = req.getParameter("cmbAlgorithm");
@@ -47,11 +48,10 @@ public class ServiceHandler extends HttpServlet {
 		out.print("<html><head><title>Distributed Systems Assignment</title>");
 		out.print("</head>");
 		out.print("<body>");
-
+		boolean isFinished = false;
 		if (taskNumber == null) {
-			taskNumber = new String("T" + jobNumber);
-			jobNumber.getAndIncrement();
-			Requester r = new Requester(jobNumber.get(), t, s, AlgoService.getComparer(algorithm));
+			taskNumber = new String(jobNumber.toString());
+			Requester r = new Requester(jobNumber.getAndIncrement(), t, s, AlgoService.getComparer(algorithm));
 			try {
 				inQueue.put(r);
 			} catch (InterruptedException e) {
@@ -61,10 +61,9 @@ public class ServiceHandler extends HttpServlet {
 			// Add job to in-queue
 		} else {
 			// Check out-queue for finished job
-			if(outQueue.containsKey(jobNumber)){
-				if(outQueue.get(jobNumber).isProcessed())
-				{
-					out.print(outQueue.get(jobNumber).getResult());
+			if (outQueue.containsKey(taskNumber)) {
+				if (outQueue.get(taskNumber).isProcessed()) {
+					isFinished = true;
 				}
 
 			}
@@ -78,29 +77,6 @@ public class ServiceHandler extends HttpServlet {
 		out.print("<br>Algorithm: " + algorithm);
 		out.print("<br>String <i>s</i> : " + s);
 		out.print("<br>String <i>t</i> : " + t);
-		out.print(
-				"<br>This servlet should only be responsible for handling client request and returning responses. Everything else should be handled by different objects.");
-		out.print(
-				"Note that any variables declared inside this doGet() method are thread safe. Anything defined at a class level is shared between HTTP requests.");
-		out.print("</b></font>");
-
-		out.print("<P> Next Steps:");
-		out.print("<OL>");
-		out.print(
-				"<LI>Generate a big random number to use a a job number, or just increment a static long variable declared at a class level, e.g. jobNumber.");
-		out.print("<LI>Create some type of an object from the request variables and jobNumber.");
-		out.print("<LI>Add the message request object to a LinkedList or BlockingQueue (the IN-queue)");
-		out.print(
-				"<LI>Return the jobNumber to the client web browser with a wait interval using <meta http-equiv=\"refresh\" content=\"10\">. The content=\"10\" will wait for 10s.");
-		out.print("<LI>Have some process check the LinkedList or BlockingQueue for message requests.");
-		out.print(
-				"<LI>Poll a message request from the front of the queue and make an RMI call to the String Comparison Service.");
-		out.print(
-				"<LI>Get the <i>Resultator</i> (a stub that is returned IMMEDIATELY by the remote method) and add it to a Map (the OUT-queue) using the jobNumber as the key and the <i>Resultator</i> as a value.");
-		out.print(
-				"<LI>Return the result of the string comparison to the client next time a request for the jobNumber is received and the <i>Resultator</i> returns true for the method <i>isComplete().</i>");
-		out.print("</OL>");
-
 		out.print("<form name=\"frmRequestDetails\">");
 		out.print("<input name=\"cmbAlgorithm\" type=\"hidden\" value=\"" + algorithm + "\">");
 		out.print("<input name=\"txtS\" type=\"hidden\" value=\"" + s + "\">");
@@ -110,31 +86,35 @@ public class ServiceHandler extends HttpServlet {
 		out.print("</body>");
 		out.print("</html>");
 
-		out.print("<script>");
-		out.print("var wait=setTimeout(\"document.frmRequestDetails.submit();\", 10000);");
-		out.print("</script>");
+		if(isFinished)
+		{
+			out.print("FINISHED\n");
+			out.print("Result :"+outQueue.get(taskNumber).getResult());
+		}
+		else{
+			out.print("<script>");
+			out.print("var wait=setTimeout(\"document.frmRequestDetails.submit();\", 10000);");
+			out.print("</script>");
+		}
 
 		// You can use this method to implement the functionality of an RMI
 		// client
-		new Thread() {
-			public void run() {
-				try {
-					if(!inQueue.isEmpty())
-					{
-						Requester req = inQueue.poll();
+		if (!inQueue.isEmpty()) {
+			new Thread() {
+				public void run() {
+					try {
+ 						Requester req = inQueue.poll();
+						System.out.println("Started Requesting "+req.getJobId());
 						StringService ss = (StringService) Naming.lookup("rmi://localhost:1099/StringService");
-						Resultator res = ss.compare(req);
-						outQueue.put(req.getJobId(), res);
-						Thread.sleep(10000);
+						Resultator res = ss.compare(req.getStr1(), req.getStr2(), req.getComparer());
+						outQueue.put(req.getJobId().toString(), res);
+						Thread.sleep(1000);
+					} catch (MalformedURLException | RemoteException | NotBoundException | InterruptedException e) {
+						e.printStackTrace();
 					}
-				} catch (MalformedURLException | RemoteException | NotBoundException | InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
 				}
-			}
-		}.start();
-
-		//
+			}.start();
+		}
 	}
 
 	public void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

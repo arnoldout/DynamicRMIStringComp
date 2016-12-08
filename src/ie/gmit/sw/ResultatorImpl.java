@@ -1,13 +1,15 @@
 package ie.gmit.sw;
 
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 
-public class ResultatorImpl implements Resultator {
+public class ResultatorImpl extends UnicastRemoteObject implements Resultator {
 
+	private static final long serialVersionUID = 6644542;
 	private boolean processed;
 	private String result;
 
-	public ResultatorImpl() {
+	public ResultatorImpl() throws RemoteException{
 		super();
 		processed = false;
 		result = null;
