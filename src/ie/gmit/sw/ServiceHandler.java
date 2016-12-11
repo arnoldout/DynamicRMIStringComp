@@ -2,14 +2,12 @@ package ie.gmit.sw;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.MalformedURLException;
-import java.rmi.Naming;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletContext;
@@ -17,28 +15,36 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
+/**
+ * @author Oliver Arnold
+ * ServiceHandler processes jobs utilizing an in and out queue
+ * using a Threadpool, and incrementing an atomicLong every time a new job is created
+ *
+ */
 public class ServiceHandler extends HttpServlet {
 	private static final long serialVersionUID = 229626802L;
+	
 	private String remoteHost = null;
+	private ExecutorService threadPool;
 	private static AtomicLong jobNumber;
 
-	private BlockingQueue<Requester> inQueue = new ArrayBlockingQueue<Requester>(100);
-	private Map<String, Resultator> outQueue = new HashMap<String, Resultator>();
+	private BlockingQueue<Requester> inQueue;
+	private Map<String, Resultator> outQueue;
 
 	public void init() throws ServletException {
 		ServletContext ctx = getServletContext();
-		remoteHost = ctx.getInitParameter("RMI_SERVER"); // Reads the value from
-		jobNumber = new AtomicLong(0); // the
-										// <context-param>
-										// in web.xml
+		remoteHost = ctx.getInitParameter("RMI_SERVER"); // Reads the value from the <context-param> in web.xml
+		jobNumber = new AtomicLong(0);
+		threadPool = Executors.newFixedThreadPool(5);
+		inQueue = new ArrayBlockingQueue<Requester>(100);
+		outQueue = new ConcurrentHashMap<String, Resultator>();
 	}
 
 	public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		resp.setContentType("text/html");
 		PrintWriter out = resp.getWriter();
 
-		// Initialise some request varuables with the submitted form info. These
+		// Initialize some request variables with the submitted form info. These
 		// are local to this method and thread safe...
 		String algorithm = req.getParameter("cmbAlgorithm");
 		String s = req.getParameter("txtS");
@@ -48,21 +54,23 @@ public class ServiceHandler extends HttpServlet {
 		out.print("<html><head><title>Distributed Systems Assignment</title>");
 		out.print("</head>");
 		out.print("<body>");
+		
+		//isFinished checks if this job has been processed yet
 		boolean isFinished = false;
 		if (taskNumber == null) {
 			taskNumber = new String(jobNumber.toString());
-			Requester r = new Requester(jobNumber.getAndIncrement(), t, s, AlgoService.getComparer(algorithm));
 			try {
-				inQueue.put(r);
+				//add to inqueue
+				inQueue.put(new Requester(jobNumber.getAndIncrement(), t, s, AlgoService.getInstance().getStringComparerType(algorithm)));
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			// Add job to in-queue
 		} else {
 			// Check out-queue for finished job
 			if (outQueue.containsKey(taskNumber)) {
 				if (outQueue.get(taskNumber).isProcessed()) {
+					//job finished
 					isFinished = true;
 				}
 
@@ -88,32 +96,23 @@ public class ServiceHandler extends HttpServlet {
 
 		if(isFinished)
 		{
+			//output result to user
 			out.print("FINISHED\n");
 			out.print("Result :"+outQueue.get(taskNumber).getResult());
 		}
 		else{
+			//reload after 10 seconds, poll again
 			out.print("<script>");
 			out.print("var wait=setTimeout(\"document.frmRequestDetails.submit();\", 10000);");
 			out.print("</script>");
 		}
 
-		// You can use this method to implement the functionality of an RMI
-		// client
+		//if job exists
 		if (!inQueue.isEmpty()) {
-			new Thread() {
-				public void run() {
-					try {
- 						Requester req = inQueue.poll();
-						System.out.println("Started Requesting "+req.getJobId());
-						StringService ss = (StringService) Naming.lookup("rmi://localhost:1099/StringService");
-						Resultator res = ss.compare(req.getStr1(), req.getStr2(), req.getComparer());
-						outQueue.put(req.getJobId().toString(), res);
-						Thread.sleep(1000);
-					} catch (MalformedURLException | RemoteException | NotBoundException | InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}.start();
+			//take job
+			Requester request = inQueue.poll();
+			//process job
+			threadPool.submit(new RequestRunner(outQueue, request));
 		}
 	}
 

@@ -16,13 +16,9 @@
 						
 					<select name="cmbAlgorithm">
 						<option>Damerau-Levenshtein Distance</option>
-						<option>Euclidean Distance</option>
 						<option>Hamming Distance</option>
-						<option>Hirschberg's Algorithm</option>
 						<option>Jaro–Winkler Distance</option>
 						<option selected>Levenshtein Distance</option>
-						<option>Needleman-Wunsch</option>
-						<option>Smith Waterman</option>
 					</select>	
 					<p/>
 

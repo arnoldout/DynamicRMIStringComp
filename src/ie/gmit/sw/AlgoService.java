@@ -1,23 +1,56 @@
 package ie.gmit.sw;
 
+/**
+ * @author Oliver Arnold
+ * Singleton service
+ * used to convert drop down string to enum
+ * and convert enum to stringComparable instance
+ */
 public class AlgoService {
+	private static AlgoService as;
 	
-	public static StringComparer getComparer(String algo){
+	private AlgoService()
+	{
+		super();
+	}
+	/**
+	 * Get the single instance of AlgoService
+	 * @return AlgoService
+	 */
+	public static AlgoService getInstance()
+	{
+		if(as==null)
+		{
+			as = new AlgoService();
+		}
+		return as;
+	}
+	
+	/**
+	 * Convert string to stringComparer
+	 * @param String algo
+	 * @return Enum StringComparer
+	 */
+	public ComparerType getStringComparerType(String algo){
 		switch(algo)
 		{
 		case "Levenshtein Distance":
-			return StringComparer.Levenshtein;
+			return ComparerType.Levenshtein;
 		case "Hamming Distance":
-			return StringComparer.HammingDistance;
+			return ComparerType.HammingDistance;
 		case "Damerau-Levenshtein Distance":
-			return StringComparer.DamerauLevenshtein;
+			return ComparerType.DamerauLevenshtein;
 		case "Jaro–Winkler Distance":
-			return StringComparer.JaroWinkler;
+			return ComparerType.JaroWinkler;
 		}
 		return null;
 	}
-	
-	public static StringComparable getComparable(StringComparer eComparer){
+	/**
+	 * Convert StringConverter to instance of StringComparable
+	 * @param Enum eComparer
+	 * @return Instance of StringComparable
+	 */
+	public StringComparable getComparable(ComparerType eComparer){
 		switch (eComparer) {
 		case DamerauLevenshtein:
 			return new DamerauLevenshtein();

@@ -1,23 +1,34 @@
 package ie.gmit.sw;
 
+/**
+ * Request object that stores all required data on the job to be processes
+ * @author Oliver Arnold
+ */
 public class Requester{
 	private Long jobId;
 	private String strA;
 	private String strB;
-	private StringComparer sc;
-	
-	public Requester(Long jobId, String str1, String str2, StringComparer sc)  {
+	private ComparerType sc;
+
+	/**
+	 * 
+	 * @param jobId - Number id of this request
+	 * @param str1 - First String to be compared
+	 * @param str2 - Second String to be compared
+	 * @param sc - Instance of StringComparer
+	 */
+	public Requester(Long jobId, String str1, String str2, ComparerType sc)  {
 		super();
 		this.jobId = jobId;
 		this.strA = str1;
 		this.strB = str2;
 		this.sc = sc;
 	}
-	public StringComparer getComparer() 
+	public ComparerType getComparer() 
 	{
 		return sc;
 	}
-	public void setComparer(StringComparer sc) {
+	public void setComparer(ComparerType sc) {
 		this.sc = sc;
 	}
 	
